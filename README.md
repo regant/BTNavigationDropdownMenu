@@ -63,8 +63,6 @@ Once you have assigned the items and frame for dropdown menu, you can custom the
 
 `cellSelectionColor`  **- The color of the cell when the cell is selected.** *Default is lightGrayColor()*
 
-`checkMarkImage`  **- The checkmark icon of the cell.**
-
 `animationDuration`  **- The animation duration of showing/hiding menu.** *Default is 0.5s*
 
 `bounceOffset`  **- The value of bounce offset.** *Default is 10*
@@ -82,6 +80,11 @@ Once you have assigned the items and frame for dropdown menu, you can custom the
 - Xcode 7.0, Swift 2.0
 
 ## Changelog
+
+**0.3.0 (06-01-2016)**
+- Checkmark image view has been changed to accessory view
+- Added hierarchical menu support
+
 **0.1.9 (15-12-2015)**
 - Passed navigationController when initializing
 - Added the alignment of the text inside cell
