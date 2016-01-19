@@ -81,6 +81,10 @@ Once you have assigned the items and frame for dropdown menu, you can custom the
 
 ## Changelog
 
+**0.3.1 (19-01-2016)**
+- Added view “appearance” support
+- Added dynamic items support
+
 **0.3.0 (06-01-2016)**
 - Checkmark image view has been changed to accessory view
 - Added hierarchical menu support
