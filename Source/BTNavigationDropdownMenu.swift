@@ -176,77 +176,68 @@ public class BTNavigationDropdownMenu: UIView {
         }
     }
     
+    private var configuration = BTConfiguration()
+    
     public private(set) var items: [BTMenuItem]
+    public private(set) var isShown: Bool
+    public var title: String {
+        return menuTitle.text ?? ""
+    }
+    public var defaultTitle: String?
+    
     public var didSelectItemAtIndexHandler: ((indexPath: Int, state: AnyObject?) -> ())?
     
     private var navigationController: UINavigationController?
-    private var configuration = BTConfiguration()
+    
     private var topSeparator: UIView!
     private var menuButton: UIButton!
     private var menuTitle: UILabel!
     private var menuArrow: UIImageView!
     private var backgroundView: UIView!
     private var tableView: BTTableView!
-    private var isShown: Bool!
     private var menuWrapper: UIView!
     
-    required public init?(coder aDecoder: NSCoder) {
+    public required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    public init(navigationController: UINavigationController?, items: [BTMenuItem] = [], selectedIndex: Int = 0) {
+    public init(defaultTitle: String? = nil, items: [BTMenuItem] = [], selectedIndex: Int = 0) {
         
-        // Navigation controller
-        if let navigationController = navigationController {
-            self.navigationController = navigationController
-        } else {
-            self.navigationController = UIApplication.sharedApplication().keyWindow?.rootViewController?.topMostViewController?.navigationController
-        }
-        
+        // Init stored properties
+        let window = UIApplication.sharedApplication().keyWindow!
         self.items = items
-        
-        // Get titleSize
-        let title = items.count > selectedIndex
-            ? items[selectedIndex].title
-            : ""
-        let titleSize = (title as NSString).sizeWithAttributes([NSFontAttributeName:self.configuration.cellTextLabelFont])
-        
-        // Set frame
-        let frame = CGRectMake(0, 0, titleSize.width + (self.configuration.arrowPadding + self.configuration.arrowImage.size.width)*2, self.navigationController!.navigationBar.frame.height)
-        
-        super.init(frame: frame)
-        
-        self.navigationController?.view.addObserver(self, forKeyPath: "frame", options: .New, context: nil)
-        
         self.isShown = false
+        self.defaultTitle = defaultTitle
         
-        // Init button as navigation title
-        self.menuButton = UIButton(frame: frame)
-        self.menuButton.addTarget(self, action: "menuButtonTapped:", forControlEvents: UIControlEvents.TouchUpInside)
-        self.addSubview(self.menuButton)
+        super.init(frame: CGRectZero)
         
-        self.menuTitle = UILabel(frame: frame)
-        self.menuTitle.text = title
-        self.menuTitle.textColor = self.navigationController?.navigationBar.titleTextAttributes?[NSForegroundColorAttributeName] as? UIColor
+        self.addGestureRecognizer(UITapGestureRecognizer(target: self, action: "toggleMenu"))
+        
+        // Set up menu title
+        self.menuTitle = UILabel()
+        self.menuTitle.text = items.count > selectedIndex
+            ? items[selectedIndex].title
+            : self.defaultTitle
         self.menuTitle.font = self.configuration.cellTextLabelFont
         self.menuTitle.textAlignment = self.configuration.cellTextLabelAlignment
-        self.menuButton.addSubview(self.menuTitle)
+        self.addSubview(self.menuTitle)
         
         self.menuArrow = UIImageView(image: self.configuration.arrowImage)
-        self.menuButton.addSubview(self.menuArrow)
+        self.addSubview(self.menuArrow)
         
-        let window = UIApplication.sharedApplication().keyWindow!
+        self.updateFrame()
+        
+        // Set up dropdown menu
         let menuWrapperBounds = window.bounds
         
-        // Set up DropdownMenu
         self.menuWrapper = UIView(frame: CGRectMake(menuWrapperBounds.origin.x, 0, menuWrapperBounds.width, menuWrapperBounds.height))
         self.menuWrapper.clipsToBounds = true
-        self.menuWrapper.autoresizingMask = UIViewAutoresizing.FlexibleWidth.union(UIViewAutoresizing.FlexibleHeight)
+        self.menuWrapper.autoresizingMask = [.FlexibleWidth, .FlexibleHeight]
         
         // Init background view (under table view)
         self.backgroundView = UIView(frame: menuWrapperBounds)
         self.backgroundView.backgroundColor = self.configuration.maskBackgroundColor
-        self.backgroundView.autoresizingMask = UIViewAutoresizing.FlexibleWidth.union(UIViewAutoresizing.FlexibleHeight)
+        self.backgroundView.autoresizingMask = [.FlexibleWidth, .FlexibleHeight]
         
         let backgroundTapRecognizer = UITapGestureRecognizer(target: self, action: "hideMenu");
         self.backgroundView.addGestureRecognizer(backgroundTapRecognizer)
@@ -261,9 +252,8 @@ public class BTNavigationDropdownMenu: UIView {
             if let didSelectItemAtIndexHandler = self.didSelectItemAtIndexHandler {
                 didSelectItemAtIndexHandler(indexPath: indexPath, state: item.state)
             }
-            self.setMenuTitle(item.title)
             self.hideMenu()
-            self.layoutSubviews()
+            self.setMenuTitle(item.title)
         }
         
         // Add background view & table view to container view
@@ -282,6 +272,11 @@ public class BTNavigationDropdownMenu: UIView {
         self.menuWrapper.hidden = true
     }
     
+    public func setMenuTitle(title: String?) {
+        self.menuTitle.text = title
+        self.updateFrame()
+    }
+    
     public func setMenuItems(items: [BTMenuItem], selectedIndex: Int = 0) {
         self.items = items
         self.tableView.items = items
@@ -292,28 +287,59 @@ public class BTNavigationDropdownMenu: UIView {
                 self.tableView.selectRowAtIndexPath(indexPath, animated: false, scrollPosition: .None)
                 self.tableView.delegate!.tableView!(self.tableView, didSelectRowAtIndexPath: indexPath)
             } else {
-                self.setMenuTitle("")
+                self.hideMenu()
+                self.setMenuTitle(self.defaultTitle)
             }
         }
     }
     
     public override func observeValueForKeyPath(keyPath: String?, ofObject object: AnyObject?, change: [String : AnyObject]?, context: UnsafeMutablePointer<Void>) {
-        if keyPath == "frame" {
-            // Set up DropdownMenu
-            self.menuWrapper.frame.origin.y = self.navigationController!.navigationBar.frame.maxY
+        if keyPath == "frame", let navigationController = self.navigationController {
+            // Set up dropdown menu
+            self.menuWrapper.frame.origin.y = navigationController.navigationBar.frame.maxY
             self.tableView.reloadData()
         }
     }
     
-    override public func layoutSubviews() {
+    public override func layoutSubviews() {
         self.menuTitle.sizeToFit()
-        self.menuTitle.center = CGPointMake(self.frame.size.width/2, self.frame.size.height/2)
+        self.menuTitle.center = CGPoint(x: self.menuTitle.frame.width / 2, y: self.frame.height / 2)
+        
         self.menuArrow.sizeToFit()
-        self.menuArrow.center = CGPointMake(CGRectGetMaxX(self.menuTitle.frame) + self.configuration.arrowPadding, self.frame.size.height/2)
+        self.menuArrow.center = CGPoint(x: self.menuTitle.frame.maxX + self.configuration.arrowPadding + self.menuArrow.frame.width / 2, y: self.frame.height / 2)
+    }
+    
+    public override func didMoveToSuperview() {
+        guard let navigationBar = superview as? UINavigationBar else {
+            fatalError("BTNavigationDropdownMenu may only be managed by a UINavigationBar")
+        }
+        guard let navigationController = navigationBar.parentViewController as? UINavigationController else {
+            fatalError("BTNavigationDropdownMenu may only be managed by a UINavigationController")
+        }
+        
+        if let oldNavigationController = self.navigationController {
+            oldNavigationController.removeObserver(self, forKeyPath: "frame")
+        }
+        
+        navigationController.view.addObserver(self, forKeyPath: "frame", options: .New, context: nil)
+        self.navigationController = navigationController
+        
+        let titleTextColor = navigationBar.titleTextAttributes?[NSForegroundColorAttributeName] as? UIColor
+        self.menuTitle.textColor = titleTextColor ?? UIColor.blackColor()
+    }
+    
+    func updateFrame() {
+        let titleSize = self.menuTitle.sizeThatFits(CGSize(width: CGFloat.max, height: CGFloat.max))
+        let arrowSize = self.menuArrow.sizeThatFits(CGSize(width: CGFloat.max, height: CGFloat.max))
+        self.frame = CGRect(x: 0, y: 0, width: titleSize.width + self.configuration.arrowPadding + arrowSize.width, height: self.frame.height)
     }
     
     func showMenu() {
-        self.menuWrapper.frame.origin.y = self.navigationController!.navigationBar.frame.maxY
+        guard !self.isShown, let navigationController = self.navigationController else {
+            return
+        }
+        
+        self.menuWrapper.frame.origin.y = navigationController.navigationBar.frame.maxY
         
         self.isShown = true
         
@@ -356,6 +382,10 @@ public class BTNavigationDropdownMenu: UIView {
     }
     
     func hideMenu() {
+        guard self.isShown else {
+            return
+        }
+        
         // Rotate arrow
         self.rotateArrow()
         
@@ -390,22 +420,21 @@ public class BTNavigationDropdownMenu: UIView {
     }
     
     func rotateArrow() {
-        UIView.animateWithDuration(self.configuration.animationDuration, animations: {
-            [weak self] in
-            
-            if let selfie = self {
-                selfie.menuArrow.transform = CGAffineTransformRotate(selfie.menuArrow.transform, 180 * CGFloat(M_PI/180))
-            }
+        UIView.animateWithDuration(self.configuration.animationDuration,
+            animations: {
+                [weak self] in
+                
+                if let selfie = self {
+                    selfie.menuArrow.transform = CGAffineTransformRotate(selfie.menuArrow.transform, 180 * CGFloat(M_PI/180))
+                }
             }
         )
     }
     
-    func setMenuTitle(title: String) {
-        self.menuTitle.text = title
-    }
-    
-    func menuButtonTapped(sender: UIButton) {
-        self.isShown == true ? hideMenu() : showMenu()
+    func toggleMenu() {
+        self.isShown
+            ? hideMenu()
+            : showMenu()
     }
 }
 
@@ -447,7 +476,7 @@ class BTConfiguration {
         self.cellSelectionColor = UIColor.lightGrayColor()
         self.animationDuration = 0.5
         self.arrowImage = UIImage(contentsOfFile: arrowImagePath!)
-        self.arrowPadding = 15
+        self.arrowPadding = 5
         self.maskBackgroundColor = UIColor.blackColor()
         self.maskBackgroundOpacity = 0.3
     }
@@ -595,6 +624,17 @@ class BTTableViewCell: UITableViewCell {
 }
 
 extension UIView {
+    
+    var parentViewController: UIViewController? {
+        var currentResponder: UIResponder = self
+        while let parentResponder = currentResponder.nextResponder() {
+            if let viewController = parentResponder as? UIViewController {
+                return viewController
+            }
+            currentResponder = parentResponder
+        }
+        return nil
+    }
     
     func findParent<ViewType: UIView>(ofType type: ViewType.Type) -> ViewType? {
         if let view = self as? ViewType {
