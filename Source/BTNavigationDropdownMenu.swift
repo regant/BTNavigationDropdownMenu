@@ -209,23 +209,24 @@ public class BTNavigationDropdownMenu: UIView {
         self.isShown = false
         self.defaultTitle = defaultTitle
         
-        super.init(frame: CGRectZero)
+        let title = items.count > selectedIndex
+            ? items[selectedIndex].title
+            : self.defaultTitle ?? ""
+        let titleSize = (title as NSString).sizeWithAttributes([NSFontAttributeName:self.configuration.cellTextLabelFont])
+        
+        super.init(frame: CGRectMake(0, 0, titleSize.width + (self.configuration.arrowPadding + self.configuration.arrowImage.size.width) * 2, 0))
         
         self.addGestureRecognizer(UITapGestureRecognizer(target: self, action: "toggleMenu"))
         
         // Set up menu title
         self.menuTitle = UILabel()
-        self.menuTitle.text = items.count > selectedIndex
-            ? items[selectedIndex].title
-            : self.defaultTitle
+        self.menuTitle.text = title
         self.menuTitle.font = self.configuration.cellTextLabelFont
         self.menuTitle.textAlignment = self.configuration.cellTextLabelAlignment
         self.addSubview(self.menuTitle)
         
         self.menuArrow = UIImageView(image: self.configuration.arrowImage)
         self.addSubview(self.menuArrow)
-        
-        self.updateFrame()
         
         // Set up dropdown menu
         let menuWrapperBounds = window.bounds
