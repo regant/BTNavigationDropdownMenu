@@ -185,7 +185,7 @@ public class BTNavigationDropdownMenu: UIView {
     }
     public var defaultTitle: String?
     
-    public var didSelectItemAtIndexHandler: ((indexPath: Int, state: AnyObject?) -> ())?
+    public var didSelectItemAtIndexHandler: ((indexPath: Int?, state: AnyObject?) -> ())?
     
     private var navigationController: UINavigationController?
     
@@ -288,6 +288,9 @@ public class BTNavigationDropdownMenu: UIView {
                 self.tableView.selectRowAtIndexPath(indexPath, animated: false, scrollPosition: .None)
                 self.tableView.delegate!.tableView!(self.tableView, didSelectRowAtIndexPath: indexPath)
             } else {
+                if let didSelectItemAtIndexHandler = self.didSelectItemAtIndexHandler {
+                    didSelectItemAtIndexHandler(indexPath: nil, state: nil)
+                }
                 self.hideMenu()
                 self.setMenuTitle(self.defaultTitle)
             }
@@ -302,11 +305,24 @@ public class BTNavigationDropdownMenu: UIView {
         }
     }
     
+    public override func sizeThatFits(size: CGSize) -> CGSize {
+        var needSize = super.sizeThatFits(size)
+        if needSize.width > size.width {
+            needSize.width = size.width
+        }
+        return needSize
+    }
+    
     public override func layoutSubviews() {
         self.menuTitle.sizeToFit()
+        self.menuArrow.sizeToFit()
+        
+        let titleWidth = self.frame.width - self.menuArrow.frame.width - self.configuration.arrowPadding
+        if self.menuTitle.frame.width > titleWidth {
+            self.menuTitle.frame.size.width = titleWidth
+        }
         self.menuTitle.center = CGPoint(x: self.menuTitle.frame.width / 2, y: self.frame.height / 2)
         
-        self.menuArrow.sizeToFit()
         self.menuArrow.center = CGPoint(x: self.menuTitle.frame.maxX + self.configuration.arrowPadding + self.menuArrow.frame.width / 2, y: self.frame.height / 2)
     }
     
@@ -330,9 +346,16 @@ public class BTNavigationDropdownMenu: UIView {
     }
     
     func updateFrame() {
-        let titleSize = self.menuTitle.sizeThatFits(CGSize(width: CGFloat.max, height: CGFloat.max))
-        let arrowSize = self.menuArrow.sizeThatFits(CGSize(width: CGFloat.max, height: CGFloat.max))
-        self.frame = CGRect(x: 0, y: 0, width: titleSize.width + self.configuration.arrowPadding + arrowSize.width, height: self.frame.height)
+        if let navigationController = self.navigationController {
+            let titleSize = self.menuTitle.sizeThatFits(CGSize(width: CGFloat.max, height: CGFloat.max))
+            let arrowSize = self.menuArrow.sizeThatFits(CGSize(width: CGFloat.max, height: CGFloat.max))
+            self.frame.size.width = titleSize.width + self.configuration.arrowPadding + arrowSize.width
+            
+            let height = navigationController.navigationBar.frame.height
+            self.frame.size.height = height
+            
+            navigationController.navigationBar.setNeedsLayout()
+        }
     }
     
     func showMenu() {

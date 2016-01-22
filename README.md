@@ -28,11 +28,17 @@ Note: This library mainly supports for **Xcode 7, Swift 2.0** and embedded frame
 ### Instantiating
 Start by creating an Array that contains strings as **elements of dropdown list**:
 ```swift
-let items = ["Most Popular", "Latest", "Trending", "Nearest", "Top Picks"]
+let items = [
+     BTMenuItem(title: "Most Popular"),
+     BTMenuItem(title: "Latest"),
+     BTMenuItem(title: "Trending"),
+     BTMenuItem(title: "Nearest"),
+     BTMenuItem(title: "Top Picks")
+]
 ```
 Create a **new instance** of BTNavigationDropdownMenu:
 ```swift
-let menuView = BTNavigationDropdownMenu(navigationController: self.navigationController, title: items.first!, items: items)
+let menuView = BTNavigationDropdownMenu(items: items)
 ```
 Set **title of navigation bar** as menuView:
 ```swift
@@ -40,9 +46,16 @@ self.navigationItem.titleView = menuView
 ```
 Call BTNavigationDropdownMenu closure to get **the index of selected cell**:
 ```swift
-menuView.didSelectItemAtIndexHandler = {(indexPath: Int) -> () in
-            println("Did select item at index: \(indexPath)")
-            self.selectedCellLabel.text = items[indexPath]
+menuView.didSelectItemAtIndexHandler = {
+     (indexPath: Int?, state: AnyObject?) -> () in
+     
+     if let indexPath = indexPath {
+          print("Did select item at index: \(indexPath)")
+          self.selectedCellLabel.text = items[indexPath].title
+     } else {
+          print("Did deselect item")
+          self.selectedCellLabel.text = ""
+     }
 }
 ```
 
@@ -80,6 +93,10 @@ Once you have assigned the items and frame for dropdown menu, you can custom the
 - Xcode 7.0, Swift 2.0
 
 ## Changelog
+
+**0.3.2 (22-01-2016)**
+- Fixed UI bugs
+- Added deselect handler
 
 **0.3.1 (19-01-2016)**
 - Added view “appearance” support
