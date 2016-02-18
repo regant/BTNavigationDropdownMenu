@@ -273,6 +273,13 @@ public class BTNavigationDropdownMenu: UIView {
         self.menuWrapper.hidden = true
     }
     
+    deinit {
+        if let navigationController = self.navigationController {
+            navigationController.view.removeObserver(self, forKeyPath: "frame")
+            self.navigationController = nil
+        }
+    }
+    
     public func setMenuTitle(title: String?) {
         self.menuTitle.text = title
         self.updateFrame()
@@ -329,6 +336,7 @@ public class BTNavigationDropdownMenu: UIView {
     public override func didMoveToSuperview() {
         if let oldNavigationController = self.navigationController {
             oldNavigationController.view.removeObserver(self, forKeyPath: "frame")
+            self.navigationController = nil
         }
         
         guard let superview = superview else {
