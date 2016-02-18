@@ -328,7 +328,7 @@ public class BTNavigationDropdownMenu: UIView {
     
     public override func didMoveToSuperview() {
         if let oldNavigationController = self.navigationController {
-            oldNavigationController.removeObserver(self, forKeyPath: "frame")
+            oldNavigationController.view.removeObserver(self, forKeyPath: "frame")
         }
         
         guard let superview = superview else {
