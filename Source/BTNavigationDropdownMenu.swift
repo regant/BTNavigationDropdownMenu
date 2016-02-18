@@ -327,15 +327,18 @@ public class BTNavigationDropdownMenu: UIView {
     }
     
     public override func didMoveToSuperview() {
+        if let oldNavigationController = self.navigationController {
+            oldNavigationController.removeObserver(self, forKeyPath: "frame")
+        }
+        
+        guard let superview = superview else {
+            return
+        }
         guard let navigationBar = superview as? UINavigationBar else {
             fatalError("BTNavigationDropdownMenu may only be managed by a UINavigationBar")
         }
         guard let navigationController = navigationBar.parentViewController as? UINavigationController else {
             fatalError("BTNavigationDropdownMenu may only be managed by a UINavigationController")
-        }
-        
-        if let oldNavigationController = self.navigationController {
-            oldNavigationController.removeObserver(self, forKeyPath: "frame")
         }
         
         navigationController.view.addObserver(self, forKeyPath: "frame", options: .New, context: nil)

@@ -94,6 +94,9 @@ Once you have assigned the items and frame for dropdown menu, you can custom the
 
 ## Changelog
 
+**0.3.2.1 (18-02-2016)**
+- Fixed bugs
+
 **0.3.2 (22-01-2016)**
 - Fixed UI bugs
 - Added deselect handler
